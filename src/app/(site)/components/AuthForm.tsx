@@ -1,12 +1,14 @@
 'use client'
 
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { useState, useCallback } from 'react'
 import { useForm, FieldValues, SubmitHandler } from 'react-hook-form';
 import Input from '@/app/components/Input/Input';
 import Button from '@/app/components/Button/Button';
 import AuthSocialButton from './AuthSocialButton';
-import { BsGithub, BsGoogle } from 'react-icons/bs'
+import { BsGithub, BsGoogle } from 'react-icons/bs';
+import { signIn } from 'next-auth/react';
 
 type Variant = 'LOGIN' | 'REGINSTER'
 
@@ -41,17 +43,44 @@ const AuthForm = () => {
 
     if (variant === 'REGINSTER') {
       axios.post('/api/register', data)
+      .catch(() => toast.error('Something went wrong!'))
+      .finally(() => setIsLoading(false))
     }
 
     if (variant === 'LOGIN') {
-      // NextAuth SignIn
+      signIn('credentials', {
+        ...data,
+        redirect: false
+      })
+      .then((callback) => {
+        if (callback?.error) {
+          toast.error('Invalid credentials');
+          return
+        }
+
+        if (callback?.ok) {
+          toast.success('Logged in!')
+        }
+      })
+      .finally(() => setIsLoading(false));
     }
   }
 
   const socialAction = (action: string) => {
     setIsLoading(true);
 
-    // NextAuth Social Sign In
+    signIn(action, { redirect: false })
+    .then((callback) => {
+      if (callback?.error) {
+        toast.error('Invalid credentials');
+        return
+      }
+
+      if (callback?.ok) {
+        toast.success('Logged in!')
+      }
+    })
+    .finally(() => setIsLoading(false));
   }
 
   return (
